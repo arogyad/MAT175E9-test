@@ -44,6 +44,7 @@ Here is a (link)[https://docs.github.com/en/desktop] with more detail on GitHub 
 
 This will be very useful if you choose to work with a partner on your midterm project!
 
+### Github Link: (https://github.com/arogyad/MAT175E9-test)[https://github.com/arogyad/MAT175E9-test]
 
 \bigskip
 
@@ -62,7 +63,7 @@ This path is going to be unique to your computer. So, the book recommends that y
 
 For example, this is how I would use a full path to upload the `exams.rda` dataset into RStudio on my computer. If you try and run the code on your computer, you will get an error saying "No such file or directory".
 
-```{r}
+```{r eval=FALSE}
 load("C:/Users/ahoward1/Documents/MAT 175 - Intro to Data Science - Fall 2023/Exercises/exams.rda")
 ```
 
@@ -80,6 +81,8 @@ Move your `exams.rda' dataset to some other location (drag and drop if need be) 
 ```{r}
 # Write your code here. 
 # Remember to use quote marks "_"
+dir <- getwd()
+load(file.path(dir, "../exams.rda"))
 ```
 
 \bigskip
@@ -97,6 +100,7 @@ The first thing to do is to look at the file. If necessary, you can edit the fil
 ```{r}
 # The following function shows the first 10 lines of the file.
 # read_lines("path to the file", n_max=10)
+read_lines("./AllCountries.csv", n_max=5)
 ```
 
 \bigskip
@@ -108,6 +112,7 @@ The first thing to do is to look at the file. If necessary, you can edit the fil
 ```{r}
 # Write your commands here.
 # You should give the file a name, like `countries`.
+country <- read_csv(file.path(getwd(), "AllCountries.csv"))
 ```
 
 
@@ -118,12 +123,14 @@ The first thing to do is to look at the file. If necessary, you can edit the fil
 ```{r}
 # Write your code here.
 # Remember `arrange` and maybe `select` also.
+country %>% slice_max(Population, n = 5)
 ```
 
 \bigskip
 
 *If you look carefully at the original file, you should note that there are empty cells, indicating missing data. What happens to these empty cells after you import the data into R?*
 
+Ans: They change into NA values.
 \bigskip
 
 \bigskip
@@ -142,9 +149,18 @@ The book lists several functions to read Excel files. The most recent is `read_x
 
 *Exercise: There should also be an Excel file called `AllCountries` in Canvas. Download that, put it somewhere on your computer, and then load it to your workspace using one of the read excel functions. Compare it with what you get when you load the `.csv` file. Are they the same?*
 
+Ans: Visually both the files look exactly the same.
+
 ```{r}
 # Write your code here.
+country_xls <- read_xls(file.path(getwd(), "./AllCountries.xls"))
 ```
+
+```{r}
+head(country_xls)
+print(head(country))
+```
+
 
 \bigskip
 
@@ -156,6 +172,7 @@ We should be able to export R data to a plain text format so that others who don
 
 ```{r}
 # Write your code here.
+write_csv(exams, "exams.csv")
 ```
 
 \bigskip
@@ -164,10 +181,44 @@ We should be able to export R data to a plain text format so that others who don
 
 *- add a new column `density` which shows the number of people per sq kilometer. Then find the top 10 densest countries. Also the 10 least dense countries.*
 
+```{r}
+country$density <- (country$Population / country$LandArea)
+country %>% top_n(n = 10, density)
+country %>% top_n(n = 10, -density)
+```
+
+
 *- construct a new dataframe that consists only of health-related data. (Of course, you should include the name of the countries too.)*
 
-*- some of the data are missing. For example, the variable `Developed` classifies countries into categories 1, 2, or 3. (What are they?) But not all countries are included. Dominica, for example, does not have a classification. Construct a dataframe that includes only countries that are classified and also where we know the percentage of the elderly population.* 
+```{r}
+country_health <- data.frame(with(country, cbind(Country, Population, Health, HIV, BirthRate, LifeExpectancy)))
+head(country_health)
+```
+
+
+*- some of the data are missing. For example, the variable `Developed` classifies countries into categories 1, 2, or 3. (What are they?) But not all countries are included. Dominica, for example, does not have a classification. Construct a dataframe that includes only countries that are classified and also where we know the percentage of the elderly population.*
+Ans: 
+*Developed* ranks the countries based on their development from 1 to 3 where 1 is low development and 3 is developed country.
+
+```{r}
+developed_elderly <- filter(country, !is.na(country$Developed) & !is.na(country$ElderlyPop))
+head(developed_elderly)
+```
+
 
 *- continuation of the previous exercise. Compare the average percent of elderly population among the three different types of countries.*
+```{r}
+developed_elderly %>% group_by(Developed) %>% summarise(mean=mean(ElderlyPop))
+```
 
-*- add a new column which essentially replaces `1` in the `Developed` column by "least developed",`2` by "developing', and `3` by "developed".* 
+
+*- add a new column which essentially replaces `1` in the `Developed` column by "least developed",`2` by "developing', and `3` by "developed".*
+```{r}
+developed_elderly_2 <- developed_elderly %>% mutate(dev = case_when(
+  Developed == 1 ~ "least developed",
+  Developed == 2 ~ "developing",
+  Developed == 3 ~ "developed",
+))
+head(developed_elderly_2)
+```
+
